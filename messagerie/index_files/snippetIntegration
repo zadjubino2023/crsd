@@ -1,0 +1,299 @@
+
+  //CSS Settings
+  /**
+   * Represents the string that describes the position of the snippet.
+   * This is a css string, so properties must be among : top, left, right, or bottom.
+   * Documentation&Examples : https://www.w3schools.com/cssref/pr_class_position.asp
+   * @type {string}
+   */
+  let snippetPosition = 'bottom:25px;right:25px;';
+  let smallSnippetPosition = 'bottom:20px;right:20px';
+
+  // DO NOT TOUCH style.innerHTML and class css styling
+  let style = document.createElement('style');
+  style.innerHTML = '.chatbot_iframe{z-index:1000;width:0;height:0;border:none;float:none;margin:0;padding:0;position:absolute;' + snippetPosition + 'overflow:hidden}' +
+    '.needOpeningBtn{width:76px;height:76px;}' +
+    '.chatOpened{width:42vw;height:80vh;}' +
+    '.debugOpened{width: 80vw;height:80vh}' +
+    '.cookiesNotAllowed{width:400px;height:75px;}' +
+    '@media screen and (max-height:640px){.chatbot_iframe{' + smallSnippetPosition + '}}' +
+    '@media screen and (max-width:750px){.chatOpened{width:100%;height:100%; bottom:0px; right:0px} .chatOpened .embeddedButton{display:none}}' +
+    '@media screen and (min-width:750px){.chatOpened{max-width:500px; min-width:500px; min-height:550px;}}' +
+    '.fullScreen{width:100vw;height:100vh; bottom:0px; right:0px; overflow:hidden}';
+  document.head.appendChild(style);
+
+  //DO NOT TOUCH - Add cursor to page for cobrowsing with LC3.0
+  const cursorDiv = document.createElement('div');
+  cursorDiv.setAttribute('id', 'cursor');
+  document.getElementById("MB-ChatEntry").appendChild(cursorDiv);
+  
+  //DO NOT TOUCH - Ask for storage access rights for unpartitioned cookies (for browsers such as Mozilla and Safari)
+  if (document.hasStorageAccess) document.hasStorageAccess().then(hasAccess => {
+    if (!hasAccess) {
+      return document.requestStorageAccess();
+    }
+  })
+  .catch(err => console.log('[ERROR] The storage access request failed : ' + err));
+
+  //DO NOT TOUCH - Creating IFrame that will contain chatbot -
+  let frame = document.createElement('iframe');
+  frame.style.display = "none";
+  frame.setAttribute("src", masterbotChatConfiguration.chatServer + "/integrationChat.html");
+  frame.setAttribute("name", "masterbot chatbot");
+  frame.setAttribute("title", "Page giving access to chatbot"); //accessibility
+  frame.setAttribute('allowtransparency', 'true');
+  frame.setAttribute('allow', 'microphone *; fullscreen *;display-capture *');
+  
+  //DO NOT TOUCH - Rendering iframe size according to options
+  const baseCssClass = 'chatbot_iframe ';
+  let tmpCurrentClass = baseCssClass;
+  frame.setAttribute('class', baseCssClass);
+  
+  const isCookieEnabled = window.navigator.cookieEnabled;
+  if (!isCookieEnabled) {
+   tmpCurrentClass =  baseCssClass + ' cookiesNotAllowed';
+   frame.setAttribute("class", tmpCurrentClass);
+     
+   //Adding Iframe to dom using the Identifier MB-ChatEntry.
+   document.getElementById("MB-ChatEntry").appendChild(frame);
+  
+   //DO NOT TOUCH - On load, sending using HTML5 postmessage APIs to masterbot-chat the informations needed.
+   frame.addEventListener('load', function () {
+     console.log('Chat Snippet Integration - Contacting chat server located @', masterbotChatConfiguration.chatServer, '.');
+     frame.contentWindow.postMessage(
+       {call: 'sendSettings', value: Object.assign(masterbotChatConfiguration, {fullScreen: false})}, //data to be sent
+       masterbotChatConfiguration.chatServer //url of the target where the message is going to be sent
+     );
+     //WIP : refreshing Iframe to allow URL change acceptance;
+     frame.style.display = "flex";
+     frame.style.position = "fixed";
+   });
+  }
+  else {
+
+    if (!masterbotChatConfiguration.haveMyOwnButton) { //if we need a button, add relevant css class
+      tmpCurrentClass =  baseCssClass + ' needOpeningBtn';
+      frame.setAttribute("class", tmpCurrentClass);
+    }
+    
+    if ( sessionStorage.getItem('chatOpened') === 'true') { //if chat was already opened, add relevant css class
+      tmpCurrentClass =  baseCssClass + ' chatOpened';
+      frame.setAttribute("class", tmpCurrentClass);
+    }
+    
+    if ( (sessionStorage.getItem('fullScreen') === 'true' && sessionStorage.getItem('chatOpened') ) 
+    || masterbotChatConfiguration.fullScreen ) { //if chat is in fullScreen mode, add relevant css class
+      tmpCurrentClass =  baseCssClass + ' fullScreen';
+      frame.setAttribute("class", tmpCurrentClass);
+    }
+  
+    //Adding Iframe to dom using the Identifier MB-ChatEntry.
+    document.getElementById("MB-ChatEntry").appendChild(frame);
+  
+    //DO NOT TOUCH - On load, sending using HTML5 postmessage APIs to masterbot-chat the informations needed.
+    frame.addEventListener('load', function () {
+      console.log('Chat Snippet Integration - Contacting chat server located @', masterbotChatConfiguration.chatServer, '.');
+      let isFullScreen = sessionStorage.getItem('fullScreen') === 'true' && sessionStorage.getItem('chatOpened') === 'true' 
+      frame.contentWindow.postMessage(
+        {call: 'sendSettings', value: Object.assign(masterbotChatConfiguration, {fullScreen: isFullScreen})}, //data to be sent
+        masterbotChatConfiguration.chatServer //url of the target where the message is going to be sent
+      );
+      //WIP : refreshing Iframe to allow URL change acceptance;
+      frame.style.display = "flex";
+      frame.style.position = "fixed";
+    });
+  
+    let allItemsOpening = document.getElementsByClassName('MB-ChatOpener');
+    
+    for (let i = 0; i < allItemsOpening.length; i++) {
+      (function (index) {
+        allItemsOpening[index].addEventListener('click', function () {
+          frame.contentWindow.postMessage(
+            {call: 'toggleVisibility', value: masterbotChatConfiguration}, //data to be sent
+            masterbotChatConfiguration.chatServer //url of the target where the message is going to be sent
+          );
+        })
+      })(i);
+    }
+  
+    // DO NOT TOUCH - Adapt css class according to what comes from chat snippet
+    let cssClass = baseCssClass;
+    window.addEventListener('message', function (event) {
+      let origin = event.origin;
+      let dataFromSnippet = event.data;
+      if (dataFromSnippet.iFrameDomain === undefined) {
+        return;
+      }
+      if (dataFromSnippet.iFrameDomain && origin !== dataFromSnippet.iFrameDomain) {
+        console.error('Data origin message ', origin, 'is different from the domain received ', dataFromSnippet.iFrameDomain);
+        //verifying message is for this application
+        return;
+      }
+      if (typeof dataFromSnippet === 'object') {
+        switch (dataFromSnippet.call) {
+          case 'toggleVisibility': //OPEN/CLOSE snippet
+           if (!dataFromSnippet.areCookiesDisabled) {
+              if (dataFromSnippet.isOpen) {
+                sessionStorage.setItem('chatOpened', 'true');
+                if (dataFromSnippet.isFullScreen) {
+                  cssClass = baseCssClass + ' fullScreen';
+                } else {
+                  sessionStorage.removeItem('fullScreen');
+                  cssClass = baseCssClass + ' chatOpened';
+                }
+                frame.setAttribute("class", cssClass);
+              } else {
+                sessionStorage.removeItem('chatOpened');
+                if (!dataFromSnippet.isFullScreen) {sessionStorage.removeItem('fullScreen');}
+                if (!masterbotChatConfiguration.haveMyOwnButton) {
+                  cssClass = baseCssClass + ' needOpeningBtn';
+                  frame.setAttribute('class', cssClass);
+                } else {
+                  frame.setAttribute("class", baseCssClass);
+                }
+              }
+           }
+           else {
+            cssClass =  baseCssClass + ' cookiesNotAllowed';
+            frame.setAttribute("class", cssClass);
+           }
+           break;
+          case 'toggleDebugWindow':
+            if (dataFromSnippet.isDebugOpen) {
+              sessionStorage.setItem('debugOpened', 'true');
+              cssClass = cssClass + ' debugOpened';
+              frame.setAttribute("class", cssClass);
+            } else {
+              sessionStorage.removeItem('debugOpened');
+              frame.setAttribute("class", cssClass);
+            }
+            break;
+          case 'cobrowsing':
+            if (window.lh_inst) {
+              if (dataFromSnippet.cobrowsingInfo.startCobrowse) {
+                //Create new connection with LC for cobrowsing
+                if (dataFromSnippet.cobrowsingInfo.chatId && dataFromSnippet.cobrowsingInfo.chatHash) {
+                  const value = dataFromSnippet.cobrowsingInfo.chatId.toString() + '_' + dataFromSnippet.cobrowsingInfo.chatHash.toString();
+                  window.lh_inst.addCookieAttribute('hash', value);
+                  sessionStorage.setItem('cobrowsingHash', value);
+                }
+                //Restore connection when cobrowsing is ongoing
+                else if (sessionStorage.getItem('cobrowsingHash')) {
+                  window.lh_inst.addCookieAttribute('hash', sessionStorage.getItem('cobrowsingHash'));
+                  window.lh_inst.addCookieAttribute('hash_resume', sessionStorage.getItem('cobrowsingHash'));
+                  window.lh_inst.addCookieAttribute('shr', sessionStorage.getItem('cobrowsingHash'));
+                } else {
+                  const error = new Error;
+                  error.message = "Can't start cobrowsing. Missing cobrowsing hash parameters";
+                  throw error;
+                }
+                window.lh_inst.startCoBrowse();
+                const intervalID = setInterval(() => {
+                  const el = window.document.getElementById('lhc_status_mirror');
+                  if (el) {
+                    el.addEventListener('click', () => {
+                      sessionStorage.removeItem('cobrowsingHash');
+                    });
+                    clearInterval(intervalID);
+                  }
+                }, 100);
+              } else if (dataFromSnippet.cobrowsingInfo.cmds) {
+                dataFromSnippet.cobrowsingInfo.cmds.forEach(cmd => {
+                  window.lh_inst && window.lh_inst.handleMessage({
+                    data: cmd
+                  });
+                });
+              } else if (dataFromSnippet.cobrowsingInfo.stopCobrowse) {
+                const el = window.document.getElementById('lhc_status_mirror');
+                if (el) {
+                  el.click();
+                  sessionStorage.removeItem('cobrowsingHash');
+                }
+              }
+    
+            }
+            break;
+          case 'togglePreviewImage':
+            if (dataFromSnippet.previewingImg) {
+              cssClass = baseCssClass + ' fullScreen';
+              frame.setAttribute('class', cssClass);
+            } else {
+              if (sessionStorage.getItem('chatOpened')) {
+                cssClass = baseCssClass + ' chatOpened';
+                frame.setAttribute("class", cssClass);
+              } else {
+                if (!masterbotChatConfiguration.haveMyOwnButton) {
+                  cssClass = baseCssClass + ' needOpeningBtn';
+                  frame.setAttribute('class', cssClass);
+                } else {
+                  frame.setAttribute("class", baseCssClass);
+                }
+              }
+            }
+            break;
+          case 'toggleFullScreen':
+            if (dataFromSnippet.isFullScreen) {
+              frame.setAttribute("class", baseCssClass + ' fullScreen');
+              sessionStorage.setItem('fullScreen', 'true');
+              document.body.style.overflow = 'hidden';
+            } else {
+              document.body.style.overflow = 'auto';
+              sessionStorage.removeItem('fullScreen');
+              if (dataFromSnippet.isOpen) {
+                sessionStorage.setItem('chatOpened', 'true');
+                cssClass = baseCssClass + ' chatOpened';
+                frame.setAttribute("class", cssClass);
+              } else {
+                sessionStorage.removeItem('chatOpened');
+                if (!masterbotChatConfiguration.haveMyOwnButton) {
+                  cssClass = baseCssClass + ' needOpeningBtn';
+                  frame.setAttribute('class', cssClass);
+                } else {
+                  frame.setAttribute("class", baseCssClass);
+                }
+              }
+            }
+            break;
+          // case 'toggleDragStart':
+          // 	// on mousedown iframe
+          // 	handleDragStart(dataFromSnippet.mouseX, dataFromSnippet.mouseY);
+          // 	break;
+          // case 'toggleDragMove':
+          // 	handleFrameMousemove(dataFromSnippet.offsetX, dataFromSnippet.offsetY);
+          // 	break;
+          // case 'toggleDragStop':
+          // 	handleDragEnd();
+          // 	break;
+        }
+  
+        const cursor = document.getElementById('cursor');
+        let mouseDown = false;
+        switch (dataFromSnippet.event) {
+          case 'MouseMove' :
+            if (!mouseDown) {
+              cursor.style.cssText += "position: fixed; width: 40px; height: 40px; border: 2px solid #000; box-sizing: border-box; transition: 0.0s; border-radius: 50%; pointer-events: none";
+            } 
+            let heightRatio = window.innerHeight / dataFromSnippet.h;
+            let widthRatio = window.innerWidth / dataFromSnippet.w;
+            cursor.style.top = (heightRatio * dataFromSnippet.y - dataFromSnippet.RY * heightRatio) + (window.pageYOffset) + 'px';
+            cursor.style.left = widthRatio * dataFromSnippet.x - dataFromSnippet.RX * widthRatio + 'px';
+            cursor.style.zIndex = 1001;
+            break;
+          case 'MouseDown' :
+            mouseDown = true;
+            cursor.style.width = "80px ";
+            cursor.style.height = "80px";
+            cursor.style.border = "7px dashed #000";
+            cursor.style.transition = "transform 500s";
+            cursor.style.transform = "rotate(360000deg)";
+            break;
+          case 'MouseUp' :
+            mouseDown = false;
+            break;
+          default :
+            cursor.style = null;
+            break;
+        }
+      }
+    }, false);
+  }

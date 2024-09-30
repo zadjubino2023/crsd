@@ -1,0 +1,28 @@
+@font-face {
+    font-family: 'RCNicon';
+    src: url('rcn/Font/Font_icon/RCNicon.ttf');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Marianne";
+    src: url('rcn/Font/Font_Marianne/Marianne/fontes web/Marianne-Regular.woff');
+    font-display: swap;
+}
+
+.rcn-inputField__input:invalid {
+    border-color: var(--rcn-semantic-color-interaction-border-default-error);
+}
+
+.rcn-notification {
+    width: 100%;
+}
+
+.rcn-footer__productLogo {
+    width: 100%;
+    max-width: 378px;
+}
+
+.rcn-inputFieldBloc__label-rules {
+    font-weight: var(--rcn-core-fontweight-400);
+}

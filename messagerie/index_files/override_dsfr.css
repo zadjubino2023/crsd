@@ -1,0 +1,102 @@
+html {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    align-items: center;
+}
+
+main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: unset !important;
+    flex: 1;
+}
+
+button {
+    font-size: inherit;
+}
+
+
+[href] {
+    background-image:none
+}
+
+/* Skiplink */
+
+.fr-skiplinks {
+    position: absolute;
+    left: 0px;
+    z-index: 9999;
+    padding: var(--rcn-semantic-padding-vertical-400) 0;
+    transform: translateY(-150%);
+    transition: transform 0.2s;
+    background-color: var(--rcn-semantic-color-interaction-background-default-standard);
+    border-bottom: 1px solid var(--rcn-semantic-color-interaction-border-default-primary);
+    border-right: 1px solid var(--rcn-semantic-color-interaction-border-default-primary);
+}
+
+.fr-skiplinks__list {
+   display: flex;
+   flex-direction: column;
+   gap: var(--rcn-semantic-gap-vertical-300);
+}
+
+.fr-skiplinks:focus-within {
+    transform: translateY(0%);
+}
+
+/* Header */
+
+.fr-header__body-row {
+    margin: unset;
+    padding: 1.5rem 0 !important;
+}
+
+/* Footer */
+
+.fr-footer {
+    box-shadow: inset 0 2px 0 0 var(--rcn-semantic-color-interaction-background-default-primary), inset 0 -1px 0 0 var(--rcn-semantic-color-interaction-background-default-standard);
+}
+
+.fr-footer__body {
+    align-items: flex-start; 
+}
+
+.fr-footer__bottom-link {
+    color: var(--rcn-semantic-color-static-text_and_icon-dsfr_light);
+}
+
+.fr-footer__bottom-link:hover {
+    text-decoration: underline;
+}
+
+.fr-footer__content-list {
+    padding: unset;
+    margin: 1.75rem 0;
+}
+
+@media (max-width:62rem) {
+    .fr-footer__body {
+        margin-bottom: unset;
+    }
+    .fr-footer__content {
+        margin-top: unset;
+    }
+    .fr-footer__content-list {
+        margin: unset;
+    }
+}
+
+@media (min-width:62rem) {
+    .fr-footer__content {
+        justify-content: end;
+        flex-basis: 54%;
+    }
+}
